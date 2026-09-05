@@ -19,12 +19,21 @@ builder.Services.AddSingleton(new DijkstraService(graph));
 builder.Services.AddSingleton<NodeRegistry>();
 builder.Services.AddSingleton<PackageForwarder>();
 builder.Services.AddSingleton<PackageStore>();
+// Run the heartbeat service in the background.
+builder.Services.AddHostedService<HeartbeatService>();
+
 
 var app = builder.Build();
 
 app.UseSwagger();
 app.UseSwaggerUI();
 app.MapControllers();
+
+app.MapPost("/forceheartbeat", async (NodeRegistry registry) =>
+{
+    await registry.RegisterSelfAsync();
+    return Results.Ok(new { status = "heartbeat sent" });
+});
 
 // Registrera noden mot centralt register vid uppstart
 var registry = app.Services.GetRequiredService<NodeRegistry>();

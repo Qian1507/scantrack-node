@@ -5,27 +5,34 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# TODO: Kopiera projektfilen och kör restore
-# COPY ...
-# RUN dotnet restore
+# Kopiera projektfilen och kör restore
+COPY ScanTrackNode/ScanTrackNode.csproj ScanTrackNode/
+COPY data/ data/
 
-# TODO: Kopiera resten av koden och publicera
-# COPY ...
-# RUN dotnet publish -c Release -o /app/publish
+RUN dotnet restore ScanTrackNode/ScanTrackNode.csproj
 
-# TODO: Kopiera CSV-filen (den behövs i runtime-imagen också)
-# COPY ...
+# Kopiera resten av koden och publicera
+COPY ScanTrackNode/ ScanTrackNode/
+
+RUN dotnet publish ScanTrackNode/ScanTrackNode.csproj \
+    -c Release \
+    -o /app/publish
+
+
 
 # Stage 2: Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
 
-# TODO: Kopiera det publicerade projektet från build-steget
-# COPY --from=build ...
+# Kopiera det publicerade projektet från build-steget
+COPY --from=build /app/publish .
+
+# Kopiera CSV-filen i runtime-imagen 
+COPY --from=build /src/data/cities.csv /app/data/cities.csv
 
 # Porten appen lyssnar på inuti containern
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
 
-# TODO: Starta appen
-# ENTRYPOINT [...]
+# Starta appen
+ENTRYPOINT ["dotnet", "ScanTrackNode.dll"]
